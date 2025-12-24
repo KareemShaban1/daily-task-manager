@@ -415,7 +415,7 @@ export const completeTask = async (req: AuthRequest, res: Response): Promise<voi
     );
     
     // Update streak
-    await updateStreak(id, req.userId, dateString);
+    await updateStreak(Number(id), req.userId, dateString);
     
     res.json({ message: 'Task completed successfully', date: dateString });
   } catch (error) {
@@ -465,7 +465,7 @@ export const uncompleteTask = async (req: AuthRequest, res: Response): Promise<v
     }
     
     // Update streak
-    await updateStreak(id, req.userId, dateString);
+    await updateStreak(Number(id), req.userId, dateString);
     
     res.json({ message: 'Task uncompleted successfully' });
   } catch (error) {
