@@ -25,13 +25,16 @@ CREATE TABLE IF NOT EXISTS users (
 -- Task Categories
 CREATE TABLE IF NOT EXISTS task_categories (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) UNIQUE NOT NULL,
+    slug VARCHAR(100) NOT NULL,
     description TEXT,
     icon VARCHAR(50),
     color VARCHAR(7),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_slug (slug)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_slug (user_id, slug),
+    INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tasks Table

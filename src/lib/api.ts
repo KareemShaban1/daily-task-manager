@@ -35,17 +35,30 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include', // Include credentials for CORS
+        mode: 'cors', // Explicitly set CORS mode
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error: any) {
+      // Handle CORS and network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Failed to connect to API. Please check that the backend server is running at ${this.baseUrl}`);
+      }
+      if (error.message.includes('CORS')) {
+        throw new Error('CORS error: The backend server may not be configured to allow requests from this origin.');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Auth endpoints

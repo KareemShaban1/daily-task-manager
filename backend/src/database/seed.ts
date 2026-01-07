@@ -1,6 +1,11 @@
 import pool from './connection.js';
 
-const seedCategories = async () => {
+// Note: Categories are now user-specific, so this seed function is deprecated.
+// Categories should be created by users through the application.
+// If you want to create default categories for a specific user, use:
+// seedCategoriesForUser(userId)
+
+const seedCategoriesForUser = async (userId: number) => {
   const categories = [
     {
       name: 'Spiritual',
@@ -34,14 +39,15 @@ const seedCategories = async () => {
   
   for (const category of categories) {
     await pool.execute(
-      `INSERT INTO task_categories (name, slug, description, icon, color)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO task_categories (user_id, name, slug, description, icon, color)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          name = VALUES(name),
          description = VALUES(description),
          icon = VALUES(icon),
          color = VALUES(color)`,
       [
+        userId,
         category.name,
         category.slug,
         category.description,
@@ -51,8 +57,22 @@ const seedCategories = async () => {
     );
   }
   
-  console.log('✅ Categories seeded');
+  console.log(`✅ Categories seeded for user ${userId}`);
 };
+
+const seed = async () => {
+  try {
+    console.log('⚠️  Category seeding is now user-specific.');
+    console.log('⚠️  Use seedCategoriesForUser(userId) to create categories for a specific user.');
+    console.log('✅ Database seeding completed (no action taken)');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Seeding error:', error);
+    process.exit(1);
+  }
+};
+
+seed();
 
 const seed = async () => {
   try {

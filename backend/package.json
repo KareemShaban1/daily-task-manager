@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate": "tsx src/database/migrate.ts",
+    "migrate:fresh": "tsx src/database/migrate.ts --fresh",
     "seed": "tsx src/database/seed.ts"
   },
   "dependencies": {

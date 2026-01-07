@@ -7,8 +7,14 @@ export const getCategories = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
     const [categories] = await pool.execute(
-      'SELECT * FROM task_categories ORDER BY name ASC'
+      'SELECT * FROM task_categories WHERE user_id = ? ORDER BY name ASC',
+      [req.userId]
     );
     
     res.json(categories);
@@ -23,11 +29,16 @@ export const getCategory = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
     const { id } = req.params;
     
     const [categories] = await pool.execute(
-      'SELECT * FROM task_categories WHERE id = ?',
-      [id]
+      'SELECT * FROM task_categories WHERE id = ? AND user_id = ?',
+      [id, req.userId]
     );
     
     if (!Array.isArray(categories) || categories.length === 0) {
@@ -65,10 +76,10 @@ export const createCategory = async (
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    // Check if slug already exists
+    // Check if slug already exists for this user
     const [existing] = await pool.execute(
-      'SELECT id FROM task_categories WHERE slug = ?',
-      [slug]
+      'SELECT id FROM task_categories WHERE slug = ? AND user_id = ?',
+      [slug, req.userId]
     );
 
     if (Array.isArray(existing) && existing.length > 0) {
@@ -77,9 +88,9 @@ export const createCategory = async (
     }
 
     const [result] = await pool.execute(
-      `INSERT INTO task_categories (name, slug, description, icon, color)
-       VALUES (?, ?, ?, ?, ?)`,
-      [name, slug, description || null, icon || null, color || null]
+      `INSERT INTO task_categories (user_id, name, slug, description, icon, color)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [req.userId, name, slug, description || null, icon || null, color || null]
     );
 
     const insertResult = result as { insertId: number };
@@ -110,10 +121,10 @@ export const updateCategory = async (
     const { id } = req.params;
     const { name, description, icon, color } = req.body;
 
-    // Check if category exists
+    // Check if category exists and belongs to user
     const [categories] = await pool.execute(
-      'SELECT id, slug FROM task_categories WHERE id = ?',
-      [id]
+      'SELECT id, slug FROM task_categories WHERE id = ? AND user_id = ?',
+      [id, req.userId]
     );
 
     if (!Array.isArray(categories) || categories.length === 0) {
@@ -131,10 +142,10 @@ export const updateCategory = async (
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
-      // Check if new slug conflicts with existing category
+      // Check if new slug conflicts with existing category for this user
       const [existing] = await pool.execute(
-        'SELECT id FROM task_categories WHERE slug = ? AND id != ?',
-        [slug, id]
+        'SELECT id FROM task_categories WHERE slug = ? AND id != ? AND user_id = ?',
+        [slug, id, req.userId]
       );
 
       if (Array.isArray(existing) && existing.length > 0) {
@@ -166,10 +177,10 @@ export const updateCategory = async (
       return;
     }
 
-    params.push(id);
+    params.push(id, req.userId);
 
     await pool.execute(
-      `UPDATE task_categories SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE task_categories SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`,
       params
     );
 
@@ -197,10 +208,10 @@ export const deleteCategory = async (
 
     const { id } = req.params;
 
-    // Check if category exists
+    // Check if category exists and belongs to user
     const [categories] = await pool.execute(
-      'SELECT id FROM task_categories WHERE id = ?',
-      [id]
+      'SELECT id FROM task_categories WHERE id = ? AND user_id = ?',
+      [id, req.userId]
     );
 
     if (!Array.isArray(categories) || categories.length === 0) {
@@ -208,10 +219,10 @@ export const deleteCategory = async (
       return;
     }
 
-    // Check if category is being used by any tasks
+    // Check if category is being used by any tasks of this user
     const [tasks] = await pool.execute(
-      'SELECT COUNT(*) as count FROM tasks WHERE category_id = ?',
-      [id]
+      'SELECT COUNT(*) as count FROM tasks WHERE category_id = ? AND user_id = ?',
+      [id, req.userId]
     );
 
     const taskCount = (tasks as any[])[0]?.count || 0;
@@ -223,7 +234,7 @@ export const deleteCategory = async (
       return;
     }
 
-    await pool.execute('DELETE FROM task_categories WHERE id = ?', [id]);
+    await pool.execute('DELETE FROM task_categories WHERE id = ? AND user_id = ?', [id, req.userId]);
 
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {

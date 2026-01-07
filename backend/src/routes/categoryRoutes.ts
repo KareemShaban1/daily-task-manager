@@ -10,11 +10,9 @@ import { authenticate, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public routes (read-only)
-router.get('/', getCategories);
-router.get('/:id', getCategory);
-
-// Protected routes (write operations)
+// All category routes require authentication
+router.get('/', authenticate, getCategories);
+router.get('/:id', authenticate, getCategory);
 router.post('/', authenticate, createCategory);
 router.put('/:id', authenticate, updateCategory);
 router.delete('/:id', authenticate, deleteCategory);
